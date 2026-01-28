@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:html';
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
 
 import '../config/api_config.dart';
 import 'chat_stream_client.dart';
@@ -14,7 +16,7 @@ class WebChatStreamClient implements ChatStreamClient {
   Stream<ChatStreamEvent> streamChat(String message) {
     final controller = StreamController<ChatStreamEvent>();
     final uri = ApiConfig.chatStreamUri(message);
-    final source = EventSource(uri.toString());
+    final source = web.EventSource(uri.toString());
 
     void close() {
       source.close();
@@ -23,9 +25,11 @@ class WebChatStreamClient implements ChatStreamClient {
       }
     }
 
-    source.addEventListener('chunk', (event) {
-      final data = (event as MessageEvent).data?.toString();
-      if (data == null) return;
+    final web.EventListener onChunk = ((web.Event event) {
+      final data = (event as web.MessageEvent).data?.toString();
+      if (data == null || data.isEmpty) {
+        return;
+      }
       try {
         final payload = jsonDecode(data) as Map<String, dynamic>;
         final text = payload['text']?.toString() ?? '';
@@ -35,18 +39,22 @@ class WebChatStreamClient implements ChatStreamClient {
       } catch (_) {
         controller.add(ChatStreamEvent.error('Invalid chunk payload'));
       }
-    });
+    }).toJS;
 
-    source.addEventListener('done', (_) {
+    final web.EventListener onDone = ((web.Event _) {
       controller.add(ChatStreamEvent.done());
       close();
-    });
+    }).toJS;
 
-    source.addEventListener('error', (event) {
-      final message = (event as MessageEvent).data?.toString();
+    final web.EventListener onError = ((web.Event event) {
+      final message = (event as web.MessageEvent).data?.toString();
       controller.add(ChatStreamEvent.error(message ?? 'Stream error'));
       close();
-    });
+    }).toJS;
+
+    source.addEventListener('chunk', onChunk);
+    source.addEventListener('done', onDone);
+    source.addEventListener('error', onError);
 
     controller.onCancel = close;
     return controller.stream;

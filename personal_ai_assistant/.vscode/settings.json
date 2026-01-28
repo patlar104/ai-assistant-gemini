@@ -1,0 +1,6 @@
+{
+  "dart.runPubGetOnPubspecChanges": "always",
+  "dart.previewFlutterUiGuides": true,
+  "cmake.useCMakePresets": "always",
+  "cmake.configureOnOpen": true
+}

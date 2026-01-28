@@ -35,6 +35,10 @@ npm run dev
 The API will be available at `http://localhost:3001/api/chat` by default. Update `PORT` in `backend/.env` if needed.
 The SSE endpoint is `http://localhost:3001/api/chat/stream` and streams reply chunks.
 
+## IDE Setup
+- VS Code users can rely on `.vscode/` defaults (Flutter + CMake presets auto-configure on open).
+- CMake presets live in `CMakePresets.json` and target `linux/` and `windows/`.
+
 ## Testing
 ```bash
 flutter test

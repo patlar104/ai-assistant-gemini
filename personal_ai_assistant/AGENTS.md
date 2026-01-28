@@ -19,6 +19,7 @@
 - `cd backend && npm run dev` runs the API with auto-reload.
 - `cd backend && npm start` runs the API without auto-reload.
 - `cd backend && npm test` runs backend Jest + SuperTest tests.
+- VS Code uses `CMakePresets.json` plus `.vscode/` settings for auto-configuration.
 
 ## Coding Style & Naming Conventions
 - Dart uses 2-space indentation; follow the default Dart formatter (`dart format .`).
