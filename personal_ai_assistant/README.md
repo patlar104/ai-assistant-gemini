@@ -1,16 +1,33 @@
-# personal_ai_assistant
+# Personal AI Assistant
 
-A new Flutter project.
+## Architecture Overview
+- Flutter frontend lives in `lib/` with Riverpod state management and a basic chat UI screen (`lib/screens/chat_screen.dart`).
+- Navigation is configured in `lib/main.dart` using named routes.
+- Node.js backend lives in `backend/` and exposes a REST endpoint at `/api/chat` plus a WebSocket at `/ws` for streaming replies.
+- Environment examples live in `backend/.env.example` (copy to `backend/.env` for local use).
 
-## Getting Started
+## Local Development
 
-This project is a starting point for a Flutter application.
+### Flutter App
+```bash
+flutter pub get
+flutter run
+```
 
-A few resources to get you started if this is your first Flutter project:
+### Node.js Backend
+```bash
+cd backend
+npm install
+cp .env.example .env
+npm run dev
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+The API will be available at `http://localhost:3001/api/chat` by default. Update `PORT` in `backend/.env` if needed.
+The WebSocket endpoint is `ws://localhost:3001/ws` and streams reply chunks.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Folder Structure
+```
+lib/        # Flutter app code (chat UI)
+test/       # Flutter tests
+backend/    # Node.js + Express API
+```
