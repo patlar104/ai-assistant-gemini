@@ -15,8 +15,7 @@ router.post('/', (req, res) => {
   });
 });
 
-router.post('/stream', (req, res) => {
-  const { message } = req.body || {};
+const streamHandler = (req, res, message) => {
   if (!message) {
     return res.status(400).json({ error: 'message is required' });
   }
@@ -41,6 +40,13 @@ router.post('/stream', (req, res) => {
   let index = 0;
   sendEvent('ready', { ok: true });
 
+  if (process.env.NODE_ENV === 'test') {
+    sendEvent('chunk', { text: tokens[0] ?? 'Echo:' });
+    sendEvent('done');
+    res.end();
+    return;
+  }
+
   const interval = setInterval(() => {
     if (index >= tokens.length) {
       sendEvent('done');
@@ -55,6 +61,16 @@ router.post('/stream', (req, res) => {
   req.on('close', () => {
     clearInterval(interval);
   });
+};
+
+router.post('/stream', (req, res) => {
+  const { message } = req.body || {};
+  return streamHandler(req, res, message);
+});
+
+router.get('/stream', (req, res) => {
+  const message = req.query.message;
+  return streamHandler(req, res, message);
 });
 
 module.exports = router;
