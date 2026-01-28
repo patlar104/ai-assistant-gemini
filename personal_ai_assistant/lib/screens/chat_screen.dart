@@ -41,11 +41,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             padding: const EdgeInsets.only(right: 16),
             child: Center(
               child: Text(
-                state.isConnected
-                    ? 'Online'
-                    : state.isConnecting
-                        ? 'Connecting...'
-                        : 'Offline',
+                state.lastError != null
+                    ? 'Error'
+                    : state.isStreaming
+                        ? 'Streaming...'
+                        : 'Ready',
                 style: theme.textTheme.labelMedium,
               ),
             ),
@@ -54,6 +54,32 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
       body: Column(
         children: [
+          if (state.lastError != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Material(
+                color: theme.colorScheme.errorContainer,
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline,
+                          color: theme.colorScheme.onErrorContainer),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          state.lastError!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onErrorContainer,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),

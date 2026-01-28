@@ -1,53 +1,36 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../models/chat_message.dart';
 import 'chat_state.dart';
 
 final chatControllerProvider =
-    StateNotifierProvider<ChatController, ChatState>((ref) {
-  return ChatController();
-});
+    NotifierProvider<ChatController, ChatState>(ChatController.new);
 
-class ChatController extends StateNotifier<ChatState> {
-  ChatController()
-      : super(
-          ChatState(
-            messages: const [
-              ChatMessage(
-                text: 'Hello! Ask me anything to get started.',
-                isUser: false,
-              ),
-            ],
-          ),
-        ) {
-    _connect();
-  }
+class ChatController extends Notifier<ChatState> {
+  @override
+  ChatState build() {
+    ref.onDispose(() {
+      _streamSubscription?.cancel();
+      _client?.close(force: true);
+    });
 
-  static const _defaultWsUrl = 'ws://localhost:3001/ws';
-  WebSocketChannel? _channel;
-  StreamSubscription? _subscription;
-
-  void _connect() {
-    state = state.copyWith(isConnecting: true, isConnected: false);
-    _channel = WebSocketChannel.connect(Uri.parse(_defaultWsUrl));
-    _subscription = _channel?.stream.listen(
-      _handleEvent,
-      onError: (error) {
-        state = state.copyWith(
-          isConnecting: false,
-          isConnected: false,
-          lastError: error.toString(),
-        );
-      },
-      onDone: () {
-        state = state.copyWith(isConnecting: false, isConnected: false);
-      },
+    return const ChatState(
+      messages: [
+        ChatMessage(
+          text: 'Hello! Ask me anything to get started.',
+          isUser: false,
+        ),
+      ],
     );
   }
+
+  static const _streamUrl = 'http://localhost:3001/api/chat/stream';
+  HttpClient? _client;
+  StreamSubscription<String>? _streamSubscription;
 
   void sendMessage(String message) {
     if (message.trim().isEmpty) {
@@ -55,35 +38,76 @@ class ChatController extends StateNotifier<ChatState> {
     }
     final updated = [...state.messages, ChatMessage(text: message, isUser: true)];
     state = state.copyWith(messages: updated);
-
-    final payload = jsonEncode({
-      'type': 'user_message',
-      'message': message,
-    });
-    _channel?.sink.add(payload);
+    _startStream(message);
   }
 
-  void _handleEvent(dynamic event) {
-    if (event is! String) {
+  Future<void> _startStream(String message) async {
+    state = state.copyWith(isStreaming: true, lastError: null);
+    await _streamSubscription?.cancel();
+    _client?.close(force: true);
+    _client = HttpClient();
+
+    try {
+      final request = await _client!.postUrl(Uri.parse(_streamUrl));
+      request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
+      request.headers.set(HttpHeaders.acceptHeader, 'text/event-stream');
+      request.add(utf8.encode(jsonEncode({'message': message})));
+
+      final response = await request.close();
+      if (response.statusCode != HttpStatus.ok) {
+        final body = await response.transform(utf8.decoder).join();
+        throw HttpException(
+          'Stream failed: ${response.statusCode} $body',
+        );
+      }
+
+      String? currentEvent;
+      String? currentData;
+
+      _streamSubscription = response
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen((line) {
+        if (line.isEmpty) {
+          _handleSseEvent(currentEvent, currentData);
+          currentEvent = null;
+          currentData = null;
+          return;
+        }
+        if (line.startsWith('event:')) {
+          currentEvent = line.substring(6).trim();
+          return;
+        }
+        if (line.startsWith('data:')) {
+          currentData = line.substring(5).trim();
+        }
+      }, onError: (error) {
+        state = state.copyWith(isStreaming: false, lastError: error.toString());
+      }, onDone: () {
+        state = state.copyWith(isStreaming: false);
+      });
+    } catch (error) {
+      state = state.copyWith(isStreaming: false, lastError: error.toString());
+    }
+  }
+
+  void _handleSseEvent(String? event, String? data) {
+    if (event == null) {
       return;
     }
-    final Map<String, dynamic> data = jsonDecode(event) as Map<String, dynamic>;
-    switch (data['type']) {
-      case 'ready':
-        state = state.copyWith(isConnecting: false, isConnected: true);
-        return;
+    switch (event) {
       case 'chunk':
-        _appendAssistantChunk(data['text']?.toString() ?? '');
+        if (data == null || data.isEmpty) {
+          return;
+        }
+        final payload = jsonDecode(data) as Map<String, dynamic>;
+        _appendAssistantChunk(payload['text']?.toString() ?? '');
         return;
       case 'done':
         _finishAssistantMessage();
         return;
       case 'error':
-        state = state.copyWith(
-          isConnecting: false,
-          isConnected: false,
-          lastError: data['message']?.toString(),
-        );
+        state = state.copyWith(isStreaming: false, lastError: data);
         return;
       default:
         return;
@@ -118,10 +142,4 @@ class ChatController extends StateNotifier<ChatState> {
     }
   }
 
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    _channel?.sink.close();
-    super.dispose();
-  }
 }
