@@ -18,6 +18,7 @@
 - `cd backend && npm install` installs backend dependencies.
 - `cd backend && npm run dev` runs the API with auto-reload.
 - `cd backend && npm start` runs the API without auto-reload.
+- `cd backend && npm test` runs backend Jest + SuperTest tests.
 
 ## Coding Style & Naming Conventions
 - Dart uses 2-space indentation; follow the default Dart formatter (`dart format .`).
@@ -31,11 +32,18 @@
 - Name tests with the `*_test.dart` suffix.
 - Prefer small unit tests and focused widget tests; keep tests deterministic.
 - Optional coverage: `flutter test --coverage` (generates `coverage/`).
+- Backend tests live in `backend/tests/` and use Jest/SuperTest.
 
 ## Backend API Notes
 - REST: `POST /api/chat` accepts `{ "message": "..." }` and returns a full reply.
 - Streaming: `POST /api/chat/stream` returns an SSE stream of reply chunks.
 - Update backend config via `backend/.env` (copy from `backend/.env.example`).
+- Set `GEMINI_API_KEY` in `backend/.env` (create one in Google AI Studio or Google Cloud Console).
+
+## Deployment Notes
+- Android: `flutter build apk`
+- iOS: `flutter build ios` (requires Xcode and signing)
+- macOS: `flutter build macos`
 
 ## Commit & Pull Request Guidelines
 - Commit messages are short, imperative summaries (examples in history: "Add Windows support for personal AI assistant", "initialize workspace configuration file").
@@ -43,3 +51,4 @@
 
 ## Configuration Tips
 - If you add assets or fonts, register them under the `flutter:` section of `pubspec.yaml`.
+- Use `--dart-define=API_BASE_URL=...` to point the Flutter app at non-localhost endpoints (Android emulator uses `http://10.0.2.2:3001`).
