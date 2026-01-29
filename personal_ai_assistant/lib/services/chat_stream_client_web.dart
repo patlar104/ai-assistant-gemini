@@ -47,7 +47,12 @@ class WebChatStreamClient implements ChatStreamClient {
     }).toJS;
 
     final web.EventListener onError = ((web.Event event) {
-      final message = (event as web.MessageEvent).data?.toString();
+      String? message;
+      try {
+        message = (event as web.MessageEvent).data?.toString();
+      } catch (_) {
+        message = null;
+      }
       controller.add(ChatStreamEvent.error(message ?? 'Stream error'));
       close();
     }).toJS;

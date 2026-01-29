@@ -3,7 +3,13 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
-- Document any upcoming changes here.
+### Changed
+- Clarified Flutter-first edit guidance in `AGENTS.md`.
+
+### Fixed
+- Avoided web SSE error handling crashes when error events lack message payloads.
+- Closed stale streaming assistant messages when streams are restarted or fail.
+- Limited Android cleartext traffic config to debug/profile builds only.
 
 ## [2026-01-28]
 ### Added

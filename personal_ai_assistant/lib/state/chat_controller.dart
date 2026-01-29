@@ -39,6 +39,7 @@ class ChatController extends Notifier<ChatState> {
 
   Future<void> _startStream(String message) async {
     state = state.copyWith(isStreaming: true, lastError: null);
+    _finishAssistantMessage();
     await _streamSubscription?.cancel();
     final stream = ref.read(chatStreamClientProvider).streamChat(message);
     _streamSubscription = stream.listen(
@@ -62,6 +63,7 @@ class ChatController extends Notifier<ChatState> {
         state = state.copyWith(isStreaming: false);
         return;
       case ChatStreamEventType.error:
+        _finishAssistantMessage();
         state = state.copyWith(
           isStreaming: false,
           lastError: event.message ?? 'Unknown error',
@@ -89,12 +91,13 @@ class ChatController extends Notifier<ChatState> {
 
   void _finishAssistantMessage() {
     final messages = [...state.messages];
-    if (messages.isNotEmpty &&
-        !messages.last.isUser &&
-        messages.last.isStreaming) {
-      final last = messages.last;
-      messages[messages.length - 1] = last.copyWith(isStreaming: false);
-      state = state.copyWith(messages: messages);
+    for (var index = messages.length - 1; index >= 0; index -= 1) {
+      final message = messages[index];
+      if (!message.isUser && message.isStreaming) {
+        messages[index] = message.copyWith(isStreaming: false);
+        state = state.copyWith(messages: messages);
+        return;
+      }
     }
   }
 

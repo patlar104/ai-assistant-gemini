@@ -9,6 +9,11 @@
 - `pubspec.yaml` declares dependencies, assets, and app metadata; `analysis_options.yaml` defines lint rules.
 - `backend/.env.example` provides backend environment defaults.
 
+## Where to Make Changes (Flutter vs Platform)
+- Default: make UI/logic changes in `lib/` and run via `flutter run` / `flutter build <platform>`.
+- Edit platform folders only for platform-specific configuration or native integrations (e.g., Android manifest, iOS entitlements, desktop network permissions).
+- Never edit `build/` or generated files (Flutter/Gradle/Xcode outputs).
+
 ## Build, Test, and Development Commands
 - `flutter pub get` installs Dart/Flutter dependencies.
 - `flutter run` runs the app on a connected device or emulator.
