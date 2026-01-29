@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Avoided web SSE error handling crashes when error events lack message payloads.
 - Closed stale streaming assistant messages when streams are restarted or fail.
 - Limited Android cleartext traffic config to debug/profile builds only.
+- Ensured SSE streaming emits in-band error events for missing messages on web.
 
 ## [2026-01-28]
 ### Added

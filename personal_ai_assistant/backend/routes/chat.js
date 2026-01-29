@@ -16,10 +16,6 @@ router.post('/', (req, res) => {
 });
 
 const streamHandler = (req, res, message) => {
-  if (!message) {
-    return res.status(400).json({ error: 'message is required' });
-  }
-
   res.status(200);
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -31,10 +27,20 @@ const streamHandler = (req, res, message) => {
   const sendEvent = (event, data) => {
     res.write(`event: ${event}\n`);
     if (data !== undefined) {
-      res.write(`data: ${JSON.stringify(data)}\n`);
+      if (typeof data === 'string') {
+        res.write(`data: ${data}\n`);
+      } else {
+        res.write(`data: ${JSON.stringify(data)}\n`);
+      }
     }
     res.write('\n');
   };
+
+  if (!message) {
+    sendEvent('error', 'message is required');
+    res.end();
+    return;
+  }
 
   const tokens = `Echo: ${message}`.split(/(\s+)/).filter(Boolean);
   let index = 0;

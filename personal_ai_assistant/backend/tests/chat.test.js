@@ -39,6 +39,35 @@ describe('Chat API', () => {
     expect(response.body.error).toBe('message is required');
   });
 
+  it('POST /api/chat/stream emits error event when message missing', (done) => {
+    const req = http.request(
+      `${baseUrl}/api/chat/stream`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+      (res) => {
+        let data = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+        res.on('end', () => {
+          expect(res.headers['content-type']).toMatch(/text\/event-stream/);
+          expect(data).toContain('event: error');
+          expect(data).toContain('data: message is required');
+          done();
+        });
+      },
+    );
+
+    req.on('error', done);
+    req.write(JSON.stringify({}));
+    req.end();
+  });
+
   it('POST /api/chat/stream streams SSE chunks', (done) => {
     let finished = false;
     let doneCalled = false;
@@ -114,6 +143,29 @@ describe('Chat API', () => {
           finalize();
         });
         res.on('close', finalize);
+      },
+    );
+
+    req.on('error', done);
+    req.end();
+  });
+
+  it('GET /api/chat/stream emits error event when message missing', (done) => {
+    const req = http.request(
+      `${baseUrl}/api/chat/stream`,
+      { method: 'GET' },
+      (res) => {
+        let data = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+        res.on('end', () => {
+          expect(res.headers['content-type']).toMatch(/text\/event-stream/);
+          expect(data).toContain('event: error');
+          expect(data).toContain('data: message is required');
+          done();
+        });
       },
     );
 
